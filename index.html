@@ -1,0 +1,1328 @@
+<!DOCTYPE html>
+<html lang="ja" translate="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>入金・外注費 管理ツール</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Hiragino Sans', 'Yu Gothic', sans-serif; font-size: 14px; color: #1a1a1a; background: #fff; padding: 16px; }
+.container { max-width: 1200px; margin: 0 auto; }
+.header { padding: 0.75rem 0; border-bottom: 1px solid #f0f0f0; margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: nowrap; gap: 8px; }
+.header-left h1 { font-size: 18px; font-weight: 600; }
+.header-right { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.sync-status { font-size: 11px; padding: 3px 9px; border-radius: 20px; font-weight: 500; }
+.sync-status.connected { background: #E1F5EE; color: #0F6E56; }
+.sync-status.connecting { background: #FAEEDA; color: #854F0B; }
+.sync-status.error { background: #FCEBEB; color: #A32D2D; }
+.hbtn { padding: 5px 12px; border: 1px solid #ccc; border-radius: 8px; cursor: pointer; font-size: 12px; background: #fff; color: #1a1a1a; }
+.hbtn:hover { background: #f0f0f0; }
+.summary-bar { display: flex; gap: 12px; margin-bottom: 1rem; flex-wrap: wrap; }
+.summary-bar-card { flex: 1; min-width: 140px; background: #fff; border-radius: 12px; padding: 0.75rem 1.1rem; border: 1.5px solid #eee; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
+.summary-bar-label { font-size: 11px; color: #888; margin-bottom: 3px; font-weight: 500; }
+.summary-bar-total { font-size: 22px; font-weight: 700; color: #185FA5; }
+.summary-bar-total.next { color: #0F6E56; }
+.summary-bar-sub { font-size: 11px; color: #aaa; display: flex; gap: 8px; flex-wrap: wrap; margin-top: 3px; }
+@media (max-width: 640px) { .summary-bar-total { font-size: 17px; } }
+.tabs { display: flex; gap: 6px; margin-bottom: 1rem; flex-wrap: wrap; }
+.tab { padding: 7px 18px; border: 1.5px solid #e0e0e0; border-radius: 20px; cursor: pointer; font-size: 13px; background: #fff; color: #888; font-weight: 500; transition: all 0.15s; }
+.tab:hover { border-color: #bbb; color: #444; }
+.tab[onclick*="shot"] { color: #185FA5; border-color: #b5d0f0; }
+.tab[onclick*="shot"].active { background: #185FA5; color: #fff; border-color: #185FA5; }
+.tab[onclick*="running"] { color: #0F6E56; border-color: #9fd8c8; }
+.tab[onclick*="running"].active { background: #0F6E56; color: #fff; border-color: #0F6E56; }
+.tab[onclick*="gaichuu"] { color: #A32D2D; border-color: #f0b8b8; }
+.tab[onclick*="gaichuu"].active { background: #A32D2D; color: #fff; border-color: #A32D2D; }
+.tab[onclick*="summary"] { color: #666; border-color: #ddd; }
+.tab[onclick*="summary"].active { background: #555; color: #fff; border-color: #555; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+.month-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; margin-bottom: 1rem; }
+.month-card { background: #fff; border-radius: 12px; padding: 14px 16px; border: 1.5px solid #eee; cursor: pointer; transition: all 0.15s; box-shadow: 0 1px 4px rgba(0,0,0,0.05); display: flex; flex-direction: column; }
+.month-card:hover { border-color: #b0c8e8; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+.month-card.active-card { border-color: #185FA5; background: #f5f9ff; }
+.month-card.gaichuu-card { cursor: default; }
+.month-card-label { font-size: 11px; color: #888; margin-bottom: 5px; font-weight: 500; }
+.month-card-total { font-size: 20px; font-weight: 700; color: #185FA5; margin-bottom: 5px; }
+.month-card-total.red { color: #A32D2D; }
+.filters { display: flex; gap: 8px; margin-bottom: 1rem; flex-wrap: wrap; align-items: center; }
+.filters select, .filters input[type=text] { font-size: 13px; padding: 0 10px; border: 1px solid #ccc; border-radius: 8px; background: #fff; color: #1a1a1a; height: 34px; }
+.filters select { appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23999' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 28px; cursor: pointer; }
+.filters input[type=text] { width: 180px; }
+.add-btn { padding: 6px 16px; border: 1px solid #ccc; border-radius: 8px; cursor: pointer; font-size: 13px; background: #fff; color: #1a1a1a; height: 34px; }
+.table-wrap { overflow-x: auto; border: 1.5px solid #eee; border-radius: 12px; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { background: #f8f8f7; font-weight: 500; text-align: left; padding: 9px 12px; border-bottom: 1px solid #eee; white-space: nowrap; font-size: 12px; color: #666; cursor: pointer; user-select: none; }
+th:hover { background: #f0f0ee; }
+td { padding: 8px 12px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: #fafaf8; }
+.shot-table { min-width: 1100px; }
+.running-table { min-width: 500px; }
+.running-table td { padding: 5px 10px; font-size: 12px; }
+.running-table th { padding: 7px 10px; font-size: 11px; }
+.status-select { font-size: 11px; font-weight: 600; border: none; border-radius: 6px; padding: 2px 6px; cursor: pointer; appearance: none; -webkit-appearance: none; outline: none; }
+.status-select.badge-s0 { background: #E6F1FB; color: #185FA5; }
+.status-select.badge-s1 { background: #EAF3DE; color: #3B6D11; }
+.status-select.badge-s2 { background: #E1F5EE; color: #0F6E56; }
+.badge-s0 { background: #E6F1FB; color: #185FA5; }
+.badge-s1 { background: #EAF3DE; color: #3B6D11; }
+.badge-s2 { background: #E1F5EE; color: #0F6E56; }
+.amount { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.payee-kuuhaku { font-size: 10px; color: #c25400; font-weight: 500; margin-top: 2px; }
+.payee-tripot  { font-size: 10px; color: #0a7c4e; font-weight: 500; margin-top: 2px; }
+.label-chakushu { display: inline-block; font-size: 9px; font-weight: 700; color: #fff; background: #185FA5; border-radius: 3px; padding: 1px 4px; margin-right: 3px; vertical-align: middle; min-width: 28px; text-align: center; white-space: nowrap; }
+.label-zangaku { display: inline-block; font-size: 9px; font-weight: 700; color: #fff; background: #0F6E56; border-radius: 3px; padding: 1px 4px; margin-right: 3px; vertical-align: middle; min-width: 28px; text-align: center; white-space: nowrap; }
+.payment-cell { line-height: 1.6; }
+.payment-row { display: flex; align-items: center; gap: 4px; white-space: nowrap; margin-bottom: 1px; }
+.payment-amount { font-weight: 600; }
+.payment-amount.blue { color: #185FA5; }
+.payment-amount.green { color: #0F6E56; }
+.profit-p { color: #1D9E75; font-weight: 600; }
+.profit-n { color: #A32D2D; font-weight: 600; }
+.action-btns { display: flex; gap: 4px; }
+.icon-btn { cursor: pointer; background: #f5f5f4; border: 1px solid #e0e0e0; font-size: 11px; padding: 3px 10px; border-radius: 6px; color: #555; font-weight: 500; white-space: nowrap; }
+.icon-btn:hover { background: #e8f0fb; color: #185FA5; border-color: #b5d0f0; }
+.icon-btn.del { background: #fef2f2; border-color: #fca5a5; color: #A32D2D; }
+.icon-btn.del:hover { background: #fee2e2; }
+.icon-btn.renew { background: #f0fdf4; border-color: #86efac; color: #0F6E56; }
+.icon-btn.renew:hover { background: #dcfce7; }
+.empty-state { text-align: center; padding: 2rem; color: #aaa; font-size: 13px; }
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 100; align-items: center; justify-content: center; }
+.modal-overlay.open { display: flex; }
+.modal { background: #fff; border-radius: 16px; padding: 1.5rem; width: 520px; max-width: 95vw; max-height: 90vh; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.18); }
+.modal h3 { font-size: 16px; font-weight: 600; margin-bottom: 1.2rem; }
+.form-group { margin-bottom: 0.9rem; }
+.form-group label { display: block; font-size: 12px; color: #666; margin-bottom: 3px; }
+.form-group input, .form-group select, .form-group textarea { width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 8px; background: #fff; color: #1a1a1a; font-size: 13px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.form-section { font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.05em; margin: 1rem 0 0.5rem; padding-bottom: 4px; border-bottom: 1px solid #eee; }
+.modal-btns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 1.2rem; }
+.btn-primary { padding: 8px 22px; background: #1a1a1a; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 500; }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-cancel { padding: 8px 16px; border: 1px solid #ccc; border-radius: 8px; cursor: pointer; font-size: 13px; background: transparent; color: #1a1a1a; }
+.toast { position: fixed; bottom: 24px; right: 24px; background: #1a1a1a; color: #fff; padding: 10px 18px; border-radius: 10px; font-size: 13px; z-index: 200; opacity: 0; transform: translateY(10px); transition: all 0.3s; pointer-events: none; }
+.toast.show { opacity: 1; transform: translateY(0); }
+.toast.success { background: #1D9E75; }
+.toast.error { background: #A32D2D; }
+
+/* 請求チェック メモ */
+.invoice-memo-input { width: 100%; padding: 4px 8px; border: 1px solid #e0e0e0; border-radius: 6px; font-size: 12px; background: #fafafa; resize: none; font-family: inherit; }
+.invoice-memo-input:focus { outline: none; border-color: #185FA5; background: #fff; }
+
+@media (max-width: 640px) {
+  body { padding: 0; background: #f4f5f7; }
+  .container { max-width: 100%; padding: 0; }
+  .header { padding: 10px 14px 8px !important; border-bottom: 1px solid #e8e8e8 !important; background: #fff !important; flex-direction: row !important; align-items: center !important; flex-wrap: nowrap !important; gap: 8px !important; margin-bottom: 0 !important; }
+  .sp-hide { display: none !important; }
+  .header-left img { height: 36px !important; }
+  .header-right { flex: 1; display: flex !important; justify-content: flex-end !important; align-items: center !important; gap: 6px !important; flex-wrap: nowrap !important; }
+  .hbtn { font-size: 10px; padding: 4px 8px; border-radius: 6px; }
+  .summary-bar { padding: 10px 14px; gap: 8px; margin-bottom: 0; background: #fff; border-bottom: 1px solid #eee; }
+  .summary-bar-card { min-width: 0; padding: 0.6rem 0.8rem; flex: 1; }
+  .summary-bar-total { font-size: 16px; }
+  .tabs { padding: 8px 14px; gap: 6px; margin-bottom: 0; background: #fff; border-bottom: 1px solid #eee; flex-wrap: nowrap; overflow-x: auto; }
+  .tab { padding: 6px 14px; font-size: 12px; white-space: nowrap; flex-shrink: 0; }
+  .filters { padding: 10px 14px; gap: 6px; margin-bottom: 0; background: #fff; border-bottom: 1px solid #eee; flex-wrap: wrap; }
+  .filters input[type=text] { width: 100%; }
+  .filters select { flex: 1; min-width: 0; font-size: 12px; }
+  .month-cards { padding: 8px 14px; gap: 6px; margin-bottom: 0; background: #f4f5f7; grid-template-columns: 1fr; }
+  .month-card { padding: 10px 14px; border-radius: 10px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .month-card-total { font-size: 18px; margin-bottom: 0; }
+  .table-wrap { display: none; }
+  .card-list { display: block; padding: 10px 14px; background: #f4f5f7; }
+  .case-card { background: #fff; border-radius: 12px; border: none; margin-bottom: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .case-card-header { padding: 12px 14px 8px; display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+  .case-card-name { font-weight: 700; font-size: 13px; flex: 1; line-height: 1.3; }
+  .case-card-vendor { font-size: 10px; color: #aaa; margin-top: 2px; }
+  .case-card-body { padding: 0 14px 10px; display: flex; flex-direction: column; gap: 6px; }
+  .case-card-money-row { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+  .case-card-money-amount { font-weight: 700; font-size: 14px; }
+  .case-card-money-date { font-size: 11px; color: #888; margin-left: auto; }
+  .case-card-divider { height: 1px; background: #f0f0f0; margin: 2px 0; }
+  .case-card-meta { display: flex; gap: 12px; font-size: 11px; color: #888; }
+  .running-card { background: #fff; border-radius: 12px; border: none; margin-bottom: 8px; padding: 12px 14px; display: flex; align-items: center; gap: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .running-card-left { flex: 1; min-width: 0; }
+  .running-card-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .running-card-date { font-size: 11px; color: #aaa; margin-top: 2px; }
+  .running-card-amount { font-size: 15px; font-weight: 700; color: #185FA5; white-space: nowrap; }
+  .tab-content#tab-summary { padding: 10px 14px; background: #f4f5f7; }
+  .summary-table-wrap { display: none !important; }
+  .summary-mobile-cards { display: block; }
+  .form-row { grid-template-columns: 1fr; }
+  .modal { padding: 1.2rem; }
+  .badge { border-radius: 20px !important; padding: 3px 10px !important; font-size: 11px !important; }
+  .status-select { border-radius: 20px !important; padding: 3px 8px !important; }
+}
+@media (min-width: 641px) {
+  .card-list { display: none; }
+  .summary-mobile-cards { display: none; }
+  .summary-table-wrap { display: block !important; overflow-x: auto; }
+  .month-card { display: block; }
+  .month-card-total { margin-bottom: 5px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="header-left">
+      <img src="logo.png" alt="TRIPOT" style="height:48px;object-fit:contain;display:block;">
+    </div>
+    <div class="header-right">
+      <span class="sp-hide" style="font-size:11px;color:#aaa;">Firestoreに自動保存・リアルタイム同期</span>
+      <span class="sync-status connecting" id="sync-status">● 接続中...</span>
+      <button class="hbtn sp-hide" onclick="exportCSV()">CSV出力</button>
+      <button class="hbtn sp-hide" onclick="exportCurrentMonth()">月次出力</button>
+      <button class="hbtn sp-hide" onclick="deleteAllRecords()" style="color:#A32D2D;border-color:#f5c6c6;">全件削除</button>
+      <label class="hbtn sp-hide" style="cursor:pointer;color:#534AB7;border-color:#c5c0f0;">MF取込<input type="file" accept=".csv" style="display:none" onchange="importMFCSV(this)"></label>
+    </div>
+  </div>
+
+  <div class="summary-bar" id="summary-bar"></div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('shot')">ショット</button>
+    <button class="tab" onclick="showTab('running')">ランニング</button>
+    <button class="tab" onclick="showTab('gaichuu')">外注費</button>
+    <button class="tab" onclick="showTab('summary')">サマリー</button>
+    <button class="tab" onclick="showTab('invoice-check')" style="color:#d97706;border-color:#fcd34d;">請求チェック</button>
+  </div>
+
+  <!-- ショットタブ -->
+  <div id="tab-shot" class="tab-content active">
+    <div class="month-cards" id="shot-month-cards"></div>
+    <div class="filters">
+      <input type="text" id="search-shot" placeholder="案件名で検索..." oninput="renderShot()">
+      <select id="filter-shot-status" onchange="renderShot()">
+        <option value="">すべてのステータス</option>
+        <option>制作中</option><option>請求済</option>
+      </select>
+      <select id="filter-shot-month" onchange="renderShot()">
+        <option value="">すべての月</option>
+      </select>
+      <select id="filter-shot-payee" onchange="renderShot()">
+        <option value="">すべての振込先</option>
+        <option value="kuuhaku">株式会社クウハク</option>
+        <option value="tripot">トライポット株式会社</option>
+        <option value="none">振込先なし</option>
+      </select>
+    </div>
+    <div class="table-wrap">
+      <table class="shot-table">
+        <thead>
+          <tr>
+            <th style="width:36px"><input type="checkbox" id="shot-check-all" onchange="toggleAllShotCheck(this)" style="cursor:pointer"></th>
+            <th style="min-width:150px;white-space:nowrap">クライアント名</th>
+            <th style="min-width:160px">案件内容</th>
+            <th style="min-width:160px;white-space:nowrap">着手金 / 残金</th>
+            <th style="min-width:100px;white-space:nowrap">入金日</th>
+            <th style="text-align:right;min-width:70px;white-space:nowrap;font-size:11px">外注費</th>
+            <th style="text-align:right;min-width:70px;white-space:nowrap;font-size:11px">概算利益</th>
+            <th style="min-width:180px"></th>
+            <th><button class="icon-btn del" id="shot-bulk-del-btn" style="display:none" onclick="bulkDeleteShot()">選択削除</button></th>
+          </tr>
+        </thead>
+        <tbody id="shot-tbody"><tr><td colspan="9" class="empty-state">Firebaseに接続中...</td></tr></tbody>
+      </table>
+    </div>
+    <div class="card-list" id="shot-cards"></div>
+  </div>
+
+  <!-- ランニングタブ -->
+  <div id="tab-running" class="tab-content">
+    <div class="month-cards" id="running-month-cards"></div>
+    <div class="filters">
+      <input type="text" id="search-running" placeholder="案件名で検索..." oninput="renderRunning()">
+      <select id="filter-running-month" onchange="renderRunning()">
+        <option value="">すべての月</option>
+      </select>
+      <select id="filter-running-payee" onchange="renderRunning()">
+        <option value="">すべての振込先</option>
+        <option value="kuuhaku">株式会社クウハク</option>
+        <option value="tripot">トライポット株式会社</option>
+        <option value="none">振込先なし</option>
+      </select>
+      <button class="icon-btn renew" id="running-bulk-copy-btn" style="display:none;height:34px;padding:0 14px;" onclick="bulkCopyNextMonth()">選択を翌月複製</button>
+    </div>
+    <div class="table-wrap">
+      <table class="running-table">
+        <thead>
+          <tr>
+            <th style="width:36px"><input type="checkbox" id="running-check-all" onchange="toggleAllRunningCheck(this)" style="cursor:pointer"></th>
+            <th onclick="sortBy('name')">クライアント名 ↕</th>
+            <th>案件内容</th>
+            <th style="text-align:right" onclick="sortBy('chakushu')">月額 ↕</th>
+            <th onclick="sortBy('chakushuDate')">入金日 ↕</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="running-tbody"><tr><td colspan="6" class="empty-state">Firebaseに接続中...</td></tr></tbody>
+      </table>
+    </div>
+    <div class="card-list" id="running-cards"></div>
+  </div>
+
+  <!-- 外注費タブ -->
+  <div id="tab-gaichuu" class="tab-content">
+    <div class="month-cards" id="gaichuu-month-cards"></div>
+    <div class="filters">
+      <input type="text" id="search-gaichuu" placeholder="案件名で検索..." oninput="renderGaichuu()">
+    </div>
+    <div class="table-wrap">
+      <table class="shot-table">
+        <thead>
+          <tr>
+            <th>案件名</th><th>ステータス</th>
+            <th style="text-align:right">外注費</th><th>支払日</th>
+            <th style="text-align:right">入金合計</th>
+            <th style="text-align:right">概算利益</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="gaichuu-tbody"><tr><td colspan="7" class="empty-state">Firebaseに接続中...</td></tr></tbody>
+      </table>
+    </div>
+    <div class="card-list" id="gaichuu-cards"></div>
+  </div>
+
+  <!-- サマリータブ -->
+  <div id="tab-summary" class="tab-content">
+    <div id="summary-content"></div>
+  </div>
+
+  <!-- 請求チェックタブ -->
+  <div id="tab-invoice-check" class="tab-content">
+    <div class="filters">
+      <input type="text" id="search-invoice-check" placeholder="案件名で検索..." oninput="renderInvoiceCheck()">
+      <select id="filter-invoice-status" onchange="renderInvoiceCheck()">
+        <option value="">すべて</option>
+        <option value="alert">⚠ 漏れあり</option>
+        <option value="ok">✓ 問題なし</option>
+      </select>
+      <label class="hbtn sp-hide" style="cursor:pointer;color:#534AB7;border-color:#c5c0f0;height:34px;display:flex;align-items:center;">見積CSV取込<input type="file" accept=".csv" style="display:none" onchange="importEstimateCSV(this)"></label>
+    </div>
+    <!-- 振込先タブ -->
+    <div style="display:flex;gap:6px;margin-bottom:12px;border-bottom:2px solid #eee;padding-bottom:0;">
+      <button id="ic-tab-all" onclick="setPayeeTab('all')" style="padding:7px 16px;border:none;border-bottom:3px solid #185FA5;background:none;font-size:13px;font-weight:700;color:#185FA5;cursor:pointer;">すべて</button>
+      <button id="ic-tab-kuuhaku" onclick="setPayeeTab('kuuhaku')" style="padding:7px 16px;border:none;border-bottom:3px solid transparent;background:none;font-size:13px;font-weight:500;color:#888;cursor:pointer;">株式会社クウハク</button>
+      <button id="ic-tab-tripot" onclick="setPayeeTab('tripot')" style="padding:7px 16px;border:none;border-bottom:3px solid transparent;background:none;font-size:13px;font-weight:500;color:#888;cursor:pointer;">トライポット株式会社</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="min-width:200px">クライアント名</th>
+            <th style="min-width:80px">振込先</th>
+            <th style="text-align:right;min-width:100px">見積総額</th>
+            <th style="text-align:center;min-width:100px">着手金</th>
+            <th style="text-align:center;min-width:100px">残金</th>
+            <th style="text-align:right;min-width:100px">金額差額</th>
+            <th style="min-width:180px">メモ</th>
+            <th style="min-width:80px"></th>
+          </tr>
+        </thead>
+        <tbody id="invoice-check-tbody"><tr><td colspan="8" class="empty-state">読み込み中...</td></tr></tbody>
+      </table>
+    </div>
+    <div class="card-list" id="invoice-check-cards"></div>
+  </div>
+</div>
+
+<!-- モーダル -->
+<div class="modal-overlay" id="record-modal">
+  <div class="modal">
+    <h3 id="modal-title">新規案件を追加</h3>
+    <input type="hidden" id="f-id">
+    <div class="form-group">
+      <label>案件名 *</label>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <select id="f-name-select" style="flex:1;min-width:160px;padding:8px 10px;border:1px solid #ccc;border-radius:8px;font-size:13px;" onchange="onClientSelect()">
+          <option value="">クライアントを選択...</option>
+        </select>
+        <input id="f-name-suffix" placeholder="/案件内容（任意）" style="flex:1;min-width:130px;padding:8px 10px;border:1px solid #ccc;border-radius:8px;font-size:13px;" oninput="onClientSelect()">
+      </div>
+      <input type="hidden" id="f-name">
+    </div>
+    <div class="form-group"><label>ステータス</label>
+      <select id="f-status"><option>制作中</option><option>請求済</option><option>ランニング</option></select>
+    </div>
+    <div class="form-group"><label>振込先</label>
+      <select id="f-payee" style="width:100%;padding:8px 10px;border:1px solid #ccc;border-radius:8px;font-size:13px;">
+        <option value="">選択しない</option>
+        <option value="kuuhaku">株式会社クウハク</option>
+        <option value="tripot">トライポット株式会社</option>
+      </select>
+    </div>
+    <div id="f-shot-fields">
+      <div class="form-section">入金情報</div>
+      <div id="f-payments-container"></div>
+      <button type="button" onclick="addPaymentRow()" style="margin-top:6px;font-size:12px;padding:5px 12px;border:1px dashed #ccc;border-radius:8px;background:#fafafa;color:#666;cursor:pointer;width:100%;">＋ 入金行を追加</button>
+      <div class="form-section" style="margin-top:1rem;">外注費</div>
+      <div class="form-row">
+        <div class="form-group"><label>外注費（円）</label><input id="f-gaichuu" type="number" placeholder="0"></div>
+        <div class="form-group"><label>支払日</label><input id="f-gaichuu-date" type="date"></div>
+      </div>
+      <div class="form-group"><label>残金請求見込み月</label><input id="f-zangaku-est-month" type="month" style="width:100%;padding:8px 10px;border:1px solid #ccc;border-radius:8px;font-size:13px;"></div>
+    </div>
+    <div id="f-running-fields" style="display:none">
+      <div class="form-section">月額</div>
+      <div class="form-row">
+        <div class="form-group"><label>月額（円）</label><input id="f-monthly" type="number" placeholder="0"></div>
+        <div class="form-group"><label>入金日</label><input id="f-monthly-date" type="date"></div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>制作メモ</label>
+      <textarea id="f-memo" rows="3" style="width:100%;padding:8px 10px;border:1px solid #ccc;border-radius:8px;font-size:13px;resize:vertical;" placeholder="進捗・備考など"></textarea>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal()">キャンセル</button>
+      <button class="btn-primary" id="save-btn" onclick="saveRecord()">保存</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- 制作状況フローティングボタン -->
+<style>
+@keyframes fab-bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+@keyframes fab-flicker { 0%,100%{opacity:1;transform:scaleY(1)} 50%{opacity:0.6;transform:scaleY(0.75)} }
+.fab-rocket { position:fixed; bottom:0; right:28px; z-index:150; cursor:pointer; text-decoration:none; display:block; width:200px; height:160px; }
+.fab-rocket .r-anim { animation:fab-bob 2s ease-in-out infinite; transform-origin:148px 105px; }
+.fab-rocket .r-flame { animation:fab-flicker 0.35s ease-in-out infinite; transform-origin:148px 130px; }
+.fab-sp { display:none; }
+@media (max-width:640px) {
+  .fab-pc { display:none; }
+  .fab-sp { display:block; }
+  .fab-rocket { width:80px; height:80px; bottom:40px; right:16px; }
+}
+</style>
+<a class="fab-rocket" href="https://snsizumi7-lgtm.github.io/tasuku/" target="_blank" title="案件管理を開く">
+  <svg class="fab-pc" width="200" height="160" viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg">
+    <path d="M0,160 A100,100 0 0,1 200,160 Z" fill="#1E88E5"/>
+    <text x="30" y="118" font-size="16" font-weight="700" fill="#fff" font-family="sans-serif">制作状況</text>
+    <text x="30" y="138" font-size="12" font-weight="500" fill="#bbdeff" font-family="sans-serif">タスク管理へ</text>
+    <g class="r-anim">
+      <g class="r-flame"><ellipse cx="150" cy="138" rx="6" ry="9" fill="#FFB300"/><ellipse cx="150" cy="135" rx="4" ry="6" fill="#FF7043"/></g>
+      <rect x="142" y="98" width="16" height="36" rx="4" fill="#fff"/>
+      <path d="M142,98 Q142,80 150,72 Q158,80 158,98 Z" fill="#5C6BC0"/>
+      <circle cx="150" cy="110" r="6" fill="#90CAF9"/><circle cx="150" cy="110" r="3.5" fill="#1A56B0"/>
+      <path d="M142,118 L130,136 L142,132 Z" fill="#5C6BC0"/>
+      <path d="M158,118 L170,136 L158,132 Z" fill="#5C6BC0"/>
+    </g>
+  </svg>
+  <svg class="fab-sp" width="80" height="80" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="50" cy="50" r="50" fill="#1E88E5"/>
+    <text x="50" y="74" font-size="11" font-weight="700" fill="#fff" font-family="sans-serif" text-anchor="middle">制作状況</text>
+  </svg>
+</a>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script>
+// ★ Firebase設定：新しいプロジェクト作成後にここを書き換えてください
+firebase.initializeApp({
+  apiKey: "AIzaSyDj_lsZ2zm4kUrheIP1w6AQT9QUK2ach9Y",
+  authDomain: "nyukin-kanri-6e8b0.firebaseapp.com",
+  projectId: "nyukin-kanri-6e8b0",
+  storageBucket: "nyukin-kanri-6e8b0.firebasestorage.app",
+  messagingSenderId: "82201253242",
+  appId: "1:82201253242:web:696e499e710cd6320eb2c3"
+});
+
+var db = firebase.firestore();
+var col = db.collection('cases');
+var clientsCol = db.collection('clients');
+
+var data = [];
+var clientsData = [];
+var sortKey = 'name';
+var sortAsc = true;
+var STATUS_LIST = ['制作中','請求済','保守管理'];
+var BADGE_CLASS = ['badge-s0','badge-s1','badge-s2'];
+var SHOT_STATUSES = ['制作中','請求済','ランニング'];
+
+// クライアント同期
+clientsCol.orderBy('name').onSnapshot(function(snap){
+  clientsData = snap.docs.map(function(d){ var o=d.data(); o.id=d.id; return o; });
+  updateClientSelects();
+}, function(e){ console.error(e); });
+
+// ★ メイン同期（estimateItemsのみのレコードはショットに表示しない）
+col.onSnapshot(function(snap){
+  data = snap.docs.map(function(d){ var o=d.data(); o.id=d.id; return o; });
+  var el=document.getElementById('sync-status');
+  el.textContent='● 同期中 ('+data.length+'件)';
+  el.className='sync-status connected';
+  updateClientSelects();
+  renderAll();
+}, function(e){
+  var el=document.getElementById('sync-status');
+  el.textContent='● 接続エラー'; el.className='sync-status error';
+  showToast('接続エラー: '+e.message,'error');
+});
+
+function updateClientSelects(){
+  var sel=document.getElementById('f-name-select');
+  if(!sel) return;
+  var cur=sel.value;
+  sel.innerHTML='<option value="">クライアントを選択...</option>';
+  var nameSet={};
+  clientsData.forEach(function(c){ nameSet[c.name]=true; });
+  data.forEach(function(r){ if(r.name) nameSet[r.name.split('/')[0]]=true; });
+  Object.keys(nameSet).sort(function(a,b){ return a.localeCompare(b,'ja'); }).forEach(function(name){
+    var opt=document.createElement('option');
+    opt.value=name; opt.textContent=name;
+    if(name===cur) opt.selected=true;
+    sel.appendChild(opt);
+  });
+}
+
+function onClientSelect(){
+  var sel=document.getElementById('f-name-select');
+  var suffix=document.getElementById('f-name-suffix');
+  document.getElementById('f-name').value=sel.value?(sel.value+(suffix.value||'')):suffix.value;
+}
+
+function payeeLabel(r){
+  if(r.payee==='kuuhaku') return '<div class="payee-kuuhaku">株式会社クウハク</div>';
+  if(r.payee==='tripot') return '<div class="payee-tripot">トライポット株式会社</div>';
+  return '';
+}
+function badgeClass(s){ var i=STATUS_LIST.indexOf(s); return i>=0?BADGE_CLASS[i]:'badge-s0'; }
+function statusSelect(id,cur,list){
+  var disp=cur==='保守管理'?'ランニング':cur;
+  var cls=badgeClass(disp);
+  var opts=list.map(function(s){ return '<option value="'+s+'"'+(s===disp?' selected':'')+'>'+s+'</option>'; }).join('');
+  return '<select class="status-select '+cls+'" onchange="updateStatusInline(\''+id+'\',this)">'+opts+'</select>';
+}
+function updateStatusInline(id,sel){
+  var save=sel.value==='ランニング'?'保守管理':sel.value;
+  sel.className='status-select '+badgeClass(sel.value);
+  col.doc(id).update({status:save}).then(function(){ showToast('ステータスを更新','success'); }).catch(function(e){ showToast('失敗: '+e.message,'error'); });
+}
+function isRunning(r){ return r.status==='保守管理'; }
+// ★修正：estimateItemsのみ（chakushu/zangakuが両方null）のレコードはショット扱いしない
+function isShot(r){ return !isRunning(r) && !(r.estimateItems && r.estimateItems.length>0 && r.chakushu==null && r.zangaku==null); }
+function jpy(n){ return '¥'+Number(n).toLocaleString('ja-JP'); }
+function pad2(n){ return String(n).padStart(2,'0'); }
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function nowYM(){ var n=new Date(); return n.getFullYear()+'-'+pad2(n.getMonth()+1); }
+function nextYM(){ var n=new Date(),y=n.getFullYear(),m=n.getMonth()+2; if(m>12){m=1;y++;} return y+'-'+pad2(m); }
+function prevYM(){ var n=new Date(),y=n.getFullYear(),m=n.getMonth(); if(m<1){m=12;y--;} return y+'-'+pad2(m); }
+function ymLabel(ym){ return parseInt(ym.slice(0,4))+'年'+parseInt(ym.slice(5,7))+'月'; }
+
+function renderAll(){
+  renderSummaryBar();
+  var id=(document.querySelector('.tab-content.active')||{}).id;
+  if(id==='tab-shot') renderShot();
+  else if(id==='tab-running') renderRunning();
+  else if(id==='tab-gaichuu') renderGaichuu();
+  else if(id==='tab-invoice-check') renderInvoiceCheck();
+  else renderSummary();
+}
+
+function showTab(name){
+  document.querySelectorAll('.tab-content').forEach(function(el){ el.classList.remove('active'); });
+  document.querySelectorAll('.tab').forEach(function(el){ el.classList.remove('active'); });
+  document.getElementById('tab-'+name).classList.add('active');
+  var idx=['shot','running','gaichuu','summary','invoice-check'].indexOf(name);
+  var tabs=document.querySelectorAll('.tab');
+  if(tabs[idx]) tabs[idx].classList.add('active');
+  if(name==='shot') renderShot();
+  else if(name==='running') renderRunning();
+  else if(name==='gaichuu') renderGaichuu();
+  else if(name==='invoice-check') renderInvoiceCheck();
+  else renderSummary();
+}
+
+function sortBy(key){ sortAsc=(sortKey===key)?!sortAsc:true; sortKey=key; renderAll(); }
+function getSorted(rows){
+  return rows.slice().sort(function(a,b){
+    var av=a[sortKey],bv=b[sortKey];
+    if(av==null) av=sortAsc?'\uFFFF':''; if(bv==null) bv=sortAsc?'\uFFFF':'';
+    if(typeof av==='string') return sortAsc?av.localeCompare(bv,'ja'):bv.localeCompare(av,'ja');
+    return sortAsc?(av||0)-(bv||0):(bv||0)-(av||0);
+  });
+}
+function updateMonthSelect(selId,rows){
+  var sel=document.getElementById(selId); if(!sel) return;
+  var cur=sel.value,months={};
+  rows.forEach(function(r){
+    if(r.chakushuDate) months[r.chakushuDate.slice(0,7)]=true;
+    if(r.zangakuDate) months[r.zangakuDate.slice(0,7)]=true;
+  });
+  var list=Object.keys(months).filter(function(m){ return m.length===7; }).sort();
+  sel.innerHTML='<option value="">すべての月</option>';
+  list.forEach(function(m){
+    var opt=document.createElement('option');
+    opt.value=m; opt.textContent=ymLabel(m);
+    if(m===cur) opt.selected=true;
+    sel.appendChild(opt);
+  });
+}
+
+function renderSummaryBar(){
+  var ym0=prevYM(),ym1=nowYM(),ym2=nextYM();
+  function calcMonth(ym){
+    var tripot=0,kuuhaku=0,none=0;
+    data.forEach(function(r){
+      var amt=0;
+      if(isRunning(r)){ if((r.chakushuDate||'').slice(0,7)===ym) amt+=(r.chakushu||0); }
+      else{ if((r.chakushuDate||'').slice(0,7)===ym) amt+=(r.chakushu||0); if((r.zangakuDate||'').slice(0,7)===ym) amt+=(r.zangaku||0); }
+      if(amt===0) return;
+      if(r.payee==='tripot') tripot+=amt;
+      else if(r.payee==='kuuhaku') kuuhaku+=amt;
+      else none+=amt;
+    });
+    return {tripot:tripot,kuuhaku:kuuhaku,none:none,total:tripot+kuuhaku+none};
+  }
+  function makeCard(ym,label,isNow){
+    var c=calcMonth(ym);
+    var border=isNow?'border:2px solid #185FA5;':'border:1.5px solid #eee;';
+    var bg=isNow?'background:#f5f9ff;':'background:#fff;';
+    return '<div class="summary-bar-card" style="'+border+bg+'">'+
+      '<div style="font-size:12px;font-weight:700;color:'+(isNow?'#185FA5':'#555')+';margin-bottom:8px">'+ymLabel(ym)+(label?'<span style="font-size:10px;font-weight:500;color:#aaa;margin-left:5px">'+label+'</span>':'')+'</div>'+
+      '<div style="font-size:20px;font-weight:700;color:#185FA5;margin-bottom:8px">'+jpy(c.total)+'</div>'+
+      '<div style="display:flex;flex-direction:column;gap:4px;font-size:11px;">'+
+        '<div style="display:flex;justify-content:space-between;align-items:center;"><span style="color:#0a7c4e;font-weight:600">トライポット株式会社</span><span style="font-weight:700;color:#0a7c4e">'+jpy(c.tripot)+'</span></div>'+
+        '<div style="display:flex;justify-content:space-between;align-items:center;"><span style="color:#c25400;font-weight:600">株式会社クウハク</span><span style="font-weight:700;color:#c25400">'+jpy(c.kuuhaku)+'</span></div>'+
+        (c.none>0?'<div style="display:flex;justify-content:space-between;align-items:center;"><span style="color:#888">その他</span><span style="font-weight:700;color:#888">'+jpy(c.none)+'</span></div>':'')+
+      '</div>'+
+    '</div>';
+  }
+  document.getElementById('summary-bar').innerHTML=
+    makeCard(ym0,'先月',false)+
+    makeCard(ym1,'今月',true)+
+    makeCard(ym2,'来月',false);
+}
+
+function toggleMonthFilter(selId,ym){
+  var sel=document.getElementById(selId);
+  sel.value=(sel.value===ym)?'':ym;
+  renderAll();
+}
+
+// ---- ショット ----
+function renderShot(){
+  var shotData=data.filter(isShot);
+  updateMonthSelect('filter-shot-month',shotData);
+  var q=(document.getElementById('search-shot').value||'').toLowerCase();
+  var st=document.getElementById('filter-shot-status').value;
+  var mo=document.getElementById('filter-shot-month').value;
+  var py=document.getElementById('filter-shot-payee').value;
+  var rows=getSorted(shotData.filter(function(r){
+    var pm=!py||(py==='none'?!r.payee:r.payee===py);
+    return (!q||r.name.toLowerCase().indexOf(q)>=0)&&(!st||r.status===st)&&(!mo||(r.chakushuDate||'').slice(0,7)===mo||(r.zangakuDate||'').slice(0,7)===mo)&&pm;
+  }));
+  var ym0=prevYM(),ym1=nowYM(),ym2=nextYM();
+  function calcShot(ym){
+    var c=0,z=0,count=0;
+    shotData.forEach(function(r){
+      var inYm=(r.chakushuDate||'').slice(0,7)===ym||(r.zangakuDate||'').slice(0,7)===ym;
+      if((r.chakushuDate||'').slice(0,7)===ym) c+=(r.chakushu||0);
+      if((r.zangakuDate||'').slice(0,7)===ym) z+=(r.zangaku||0);
+      if(inYm) count++;
+    });
+    return {chakushu:c,zangaku:z,total:c+z,count:count};
+  }
+  function shotCard(ym,label,c,active){
+    var cls='month-card'+(active?' active-card':'');
+    return '<div class="'+cls+'" onclick="toggleMonthFilter(\'filter-shot-month\',\''+ym+'\')">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'+
+        '<span class="month-card-label">'+ymLabel(ym)+(label?'（'+label+'）':'')+(active?' ✓':'')+'</span>'+
+        '<span style="background:#e8eaf6;color:#5C6BC0;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">'+c.count+'件</span>'+
+      '</div>'+
+      '<div style="display:flex;flex-direction:column;gap:3px;margin-bottom:8px;font-size:11px">'+
+        '<span style="color:#185FA5">着手金 '+jpy(c.chakushu)+'</span>'+
+        '<span style="color:#0F6E56">残金 '+jpy(c.zangaku)+'</span>'+
+      '</div>'+
+      '<div class="month-card-total">'+jpy(c.total)+'</div></div>';
+  }
+  var mo1=document.getElementById('filter-shot-month').value;
+  document.getElementById('shot-month-cards').innerHTML=shotCard(ym0,'先月',calcShot(ym0),mo1===ym0)+shotCard(ym1,'今月',calcShot(ym1),mo1===ym1)+shotCard(ym2,'来月',calcShot(ym2),mo1===ym2);
+  if(!rows.length){
+    document.getElementById('shot-tbody').innerHTML='<tr><td colspan="9" class="empty-state">該当する案件がありません</td></tr>';
+    document.getElementById('shot-cards').innerHTML='<div class="empty-state">該当する案件がありません</div>';
+    return;
+  }
+  document.getElementById('shot-tbody').innerHTML=rows.map(function(r){
+    var income=(r.chakushu||0)+(r.zangaku||0);
+    var profit=(r.gaichuu!=null&&income>0)?income-(r.gaichuu||0):null;
+    var pH=profit==null?'—':'<span class="'+(profit>=0?'profit-p':'profit-n')+'">'+jpy(profit)+'</span>';
+    var np=r.name?r.name.split('/'):['',''];
+    return '<tr>'+
+      '<td style="text-align:center"><input type="checkbox" class="shot-row-check" data-id="'+r.id+'" onchange="onShotCheckChange()" style="cursor:pointer"></td>'+
+      '<td style="white-space:nowrap"><strong>'+esc(np[0])+'</strong>'+payeeLabel(r)+'</td>'+
+      '<td style="font-size:12px;color:#666;max-width:200px">'+esc(np.slice(1).join('/'))+'</td>'+
+      '<td style="white-space:nowrap;vertical-align:middle">'+
+        (r.chakushu!=null?'<div style="display:flex;align-items:center;gap:4px;margin-bottom:3px"><span class="label-chakushu">着</span><span style="font-weight:700;color:#185FA5;font-size:13px">'+jpy(r.chakushu)+'</span></div>':'')+
+        (r.zangaku!=null?'<div style="display:flex;align-items:center;gap:4px"><span class="label-zangaku">残</span><span style="font-weight:700;color:#0F6E56;font-size:13px">'+jpy(r.zangaku)+'</span></div>':'')+
+        (r.chakushu==null&&r.zangaku==null?'<span style="color:#ccc">—</span>':'')+
+      '</td>'+
+      '<td style="font-size:12px;white-space:nowrap;vertical-align:middle">'+
+        (r.chakushuDate?'<div style="margin-bottom:3px">'+r.chakushuDate+'</div>':'')+
+        (r.zangakuDate?'<div>'+r.zangakuDate+'</div>':'')+
+        (!r.chakushuDate&&!r.zangakuDate?'—':'')+
+      '</td>'+
+      '<td style="text-align:right;font-size:12px;color:#A32D2D;vertical-align:middle">'+(r.gaichuu!=null?jpy(r.gaichuu):'—')+'</td>'+
+      '<td style="text-align:right;font-size:12px;vertical-align:middle">'+pH+'</td>'+
+      '<td><div class="action-btns">'+
+        '<button class="icon-btn" style="background:#f0f0f0;color:#888;border-color:#ddd;" onclick="moveToRunning(this.dataset.id)" data-id="'+r.id+'">ランニングへ</button>'+
+        '<button class="icon-btn" onclick="editRecord(\''+r.id+'\')">編集</button>'+
+        '<button class="icon-btn del" onclick="deleteRecord(\''+r.id+'\',\''+esc(r.name).replace(/'/g,'')+'\')" >削除</button>'+
+      '</div></td></tr>';
+  }).join('');
+  document.getElementById('shot-cards').innerHTML=rows.map(function(r){
+    var np=r.name?r.name.split('/'):['',''];
+    var income=(r.chakushu||0)+(r.zangaku||0);
+    var profit=(r.gaichuu!=null&&income>0)?income-(r.gaichuu||0):null;
+    var disp=r.status==='保守管理'?'ランニング':r.status;
+    return '<div class="case-card">'+
+      '<div class="case-card-header"><div style="flex:1;min-width:0"><div class="case-card-name">'+esc(np[0])+'</div>'+(np[1]?'<div class="case-card-vendor">'+esc(np.slice(1).join('/'))+'</div>':'')+payeeLabel(r)+'</div>'+
+      '<button class="icon-btn renew" onclick="moveToRunning(this.dataset.id)" data-id="'+r.id+'" style="font-size:10px;padding:2px 8px;">ランニングへ</button>'+
+      '</div>'+
+      '<div class="case-card-body">'+
+        (r.chakushu!=null?'<div class="case-card-money-row"><span class="label-chakushu">着手金</span><span class="case-card-money-amount" style="color:#185FA5">'+jpy(r.chakushu)+'</span>'+(r.chakushuDate?'<span class="case-card-money-date">'+r.chakushuDate+'</span>':'')+'</div>':'')+
+        (r.zangaku!=null?'<div class="case-card-money-row"><span class="label-zangaku">残金</span><span class="case-card-money-amount" style="color:#0F6E56">'+jpy(r.zangaku)+'</span>'+(r.zangakuDate?'<span class="case-card-money-date">'+r.zangakuDate+'</span>':'')+'</div>':'')+
+        '<div class="case-card-divider"></div>'+
+        '<div class="case-card-meta"><span>外注費: <span style="color:#A32D2D;font-weight:600">'+(r.gaichuu!=null?jpy(r.gaichuu):'—')+'</span></span>'+
+        '<span>概算利益: <span style="color:'+(profit==null?'#aaa':profit>=0?'#1D9E75':'#A32D2D')+';font-weight:600">'+(profit==null?'—':jpy(profit))+'</span></span></div>'+
+      '</div></div>';
+  }).join('');
+}
+
+// ---- ランニング ----
+function renderRunning(){
+  var runData=data.filter(isRunning);
+  updateMonthSelect('filter-running-month',runData);
+  var q=(document.getElementById('search-running').value||'').toLowerCase();
+  var mo=document.getElementById('filter-running-month').value;
+  var py=document.getElementById('filter-running-payee').value;
+  var rows=getSorted(runData.filter(function(r){
+    var pm=!py||(py==='none'?!r.payee:r.payee===py);
+    return (!q||r.name.toLowerCase().indexOf(q)>=0)&&(!mo||(r.chakushuDate||'').slice(0,7)===mo)&&pm;
+  }));
+  var ym0=prevYM(),ym1=nowYM(),ym2=nextYM();
+  function calcRun(ym){ var r=runData.filter(function(r){ return (r.chakushuDate||'').slice(0,7)===ym; }); return {amount:r.reduce(function(s,r){ return s+(r.chakushu||0); },0),count:r.length}; }
+  var moR=document.getElementById('filter-running-month').value;
+  function runCard(ym,label,c,active){
+    var cls='month-card'+(active?' active-card':'');
+    return '<div class="'+cls+'" onclick="toggleMonthFilter(\'filter-running-month\',\''+ym+'\')">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'+
+        '<span class="month-card-label">'+ymLabel(ym)+(label?'（'+label+'）':'')+(active?' ✓':'')+'</span>'+
+        '<span style="background:#e8eaf6;color:#5C6BC0;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">'+c.count+'件</span>'+
+      '</div>'+
+      '<div style="font-size:11px;color:#888;margin-bottom:6px">ランニング入金予定</div>'+
+      '<div class="month-card-total">'+jpy(c.amount)+'</div></div>';
+  }
+  document.getElementById('running-month-cards').innerHTML=runCard(ym0,'先月',calcRun(ym0),moR===ym0)+runCard(ym1,'今月',calcRun(ym1),moR===ym1)+runCard(ym2,'来月',calcRun(ym2),moR===ym2);
+  if(!rows.length){
+    document.getElementById('running-tbody').innerHTML='<tr><td colspan="6" class="empty-state">該当する案件がありません</td></tr>';
+    document.getElementById('running-cards').innerHTML='<div class="empty-state">該当する案件がありません</div>';
+    return;
+  }
+  document.getElementById('running-tbody').innerHTML=rows.map(function(r){
+    var np=r.name?r.name.split('/'):['',''];
+    return '<tr>'+
+      '<td style="text-align:center"><input type="checkbox" class="running-row-check" data-id="'+r.id+'" onchange="onRunningCheckChange()" style="cursor:pointer"></td>'+
+      '<td style="white-space:nowrap"><strong>'+esc(np[0])+'</strong>'+payeeLabel(r)+'</td>'+
+      '<td style="font-size:12px;color:#666;max-width:200px">'+esc(np.slice(1).join('/'))+'</td>'+
+      '<td class="amount" style="color:#185FA5;font-weight:600">'+(r.chakushu!=null?jpy(r.chakushu):'—')+'</td>'+
+      '<td style="font-size:12px">'+(r.chakushuDate||'—')+'</td>'+
+      '<td><div class="action-btns"><button class="icon-btn" onclick="editRecord(\''+r.id+'\')">編集</button><button class="icon-btn del" onclick="deleteRecord(\''+r.id+'\',\''+esc(r.name).replace(/'/g,'')+'\')" >削除</button></div></td></tr>';
+  }).join('');
+  document.getElementById('running-cards').innerHTML=rows.map(function(r){
+    var np=r.name?r.name.split('/'):['',''];
+    return '<div class="running-card"><div class="running-card-left"><div class="running-card-name">'+esc(np[0])+'</div>'+(np[1]?'<div class="running-card-date">'+esc(np.slice(1).join('/'))+'</div>':'')+payeeLabel(r)+'<div class="running-card-date">'+(r.chakushuDate||'日付未設定')+'</div></div><div class="running-card-amount">'+(r.chakushu!=null?jpy(r.chakushu):'—')+'</div></div>';
+  }).join('');
+}
+
+// ---- 外注費 ----
+function renderGaichuu(){
+  var q=(document.getElementById('search-gaichuu').value||'').toLowerCase();
+  var rows=data.filter(function(r){ return r.gaichuu!=null&&r.gaichuu>0&&(!q||r.name.toLowerCase().indexOf(q)>=0); });
+  var ym0=prevYM(),ym1=nowYM(),ym2=nextYM();
+  function calcG(ym){ return data.filter(function(r){ return r.gaichuu!=null&&r.gaichuu>0&&(r.gaichuuDate||'').slice(0,7)===ym; }).reduce(function(s,r){ return s+(r.gaichuu||0); },0); }
+  function gCard(ym,label,amount){
+    return '<div class="month-card gaichuu-card"><div class="month-card-label">'+ymLabel(ym)+'（'+label+'）</div><div style="font-size:11px;color:#888;margin-bottom:6px">外注費支払い予定</div><div class="month-card-total red">'+jpy(amount)+'</div></div>';
+  }
+  document.getElementById('gaichuu-month-cards').innerHTML=gCard(ym0,'先月',calcG(ym0))+gCard(ym1,'今月',calcG(ym1))+gCard(ym2,'来月',calcG(ym2));
+  if(!rows.length){
+    document.getElementById('gaichuu-tbody').innerHTML='<tr><td colspan="7" class="empty-state">外注費のある案件がありません</td></tr>';
+    document.getElementById('gaichuu-cards').innerHTML='<div class="empty-state">外注費のある案件がありません</div>';
+    return;
+  }
+  document.getElementById('gaichuu-tbody').innerHTML=rows.map(function(r){
+    var income=(r.chakushu||0)+(r.zangaku||0);
+    var profit=income>0?income-(r.gaichuu||0):null;
+    var pH=profit==null?'—':'<span class="'+(profit>=0?'profit-p':'profit-n')+'">'+jpy(profit)+'</span>';
+    return '<tr><td>'+esc(r.name)+'</td><td>'+statusSelect(r.id,r.status,SHOT_STATUSES)+'</td><td class="amount" style="color:#A32D2D">'+jpy(r.gaichuu)+'</td><td style="font-size:12px">'+(r.gaichuuDate||'—')+'</td><td class="amount">'+jpy(income)+'</td><td class="amount">'+pH+'</td><td><div class="action-btns"><button class="icon-btn" onclick="editRecord(\''+r.id+'\')">編集</button><button class="icon-btn del" onclick="deleteRecord(\''+r.id+'\',\''+esc(r.name).replace(/'/g,'')+'\')" >削除</button></div></td></tr>';
+  }).join('');
+  document.getElementById('gaichuu-cards').innerHTML=rows.map(function(r){
+    var income=(r.chakushu||0)+(r.zangaku||0);
+    var profit=income>0?income-(r.gaichuu||0):null;
+    return '<div class="case-card"><div class="case-card-header"><div class="case-card-name">'+esc(r.name)+'</div><span class="badge '+badgeClass(r.status)+'">'+r.status+'</span></div><div class="case-card-body"><div style="display:flex;gap:16px;font-size:12px"><span>外注費 <strong style="color:#A32D2D">'+jpy(r.gaichuu)+'</strong></span><span>支払日 '+( r.gaichuuDate||'—')+'</span></div></div></div>';
+  }).join('');
+}
+
+// ---- 請求チェック ----
+function importEstimateCSV(input){
+  var file=input.files[0]; if(!file) return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var text=e.target.result;
+    if(text.charCodeAt(0)===0xFEFF) text=text.slice(1);
+    var lines=text.split('\n').filter(function(l){ return l.trim(); });
+    if(lines.length<2){ showToast('データがありません','error'); return; }
+    function parseLine(line){
+      var r=[],cur='',inQ=false;
+      for(var i=0;i<line.length;i++){
+        var c=line[i];
+        if(c==='"'){inQ=!inQ;} else if(c===','&&!inQ){r.push(cur.trim());cur='';} else{cur+=c;}
+      }
+      r.push(cur.trim()); return r;
+    }
+    var headers=parseLine(lines[0]);
+    var iClient=headers.indexOf('取引先名称'),iTitle=headers.indexOf('件名'),iTotal=headers.indexOf('合計金額');
+    var nameIdxAll=[]; headers.forEach(function(h,i){ if(h==='品名') nameIdxAll.push(i); });
+    var map={},currentKey=null;
+    lines.slice(1).forEach(function(line){
+      var cols=parseLine(line);
+      var clientName=(iClient>=0?cols[iClient]:'')||'',title=(iTitle>=0?cols[iTitle]:'')||'';
+      if(clientName){ currentKey=clientName+(title?'/'+title:''); if(!map[currentKey]) map[currentKey]={total:0,items:[]}; if(iTotal>=0&&cols[iTotal]) map[currentKey].total=parseFloat(cols[iTotal])||0; }
+      if(!currentKey) return;
+      if(nameIdxAll.length===1){
+        var ni=nameIdxAll[0],itemName=cols[ni]||''; if(!itemName) return;
+        var price=parseFloat(cols[ni+2])||0,qty=parseFloat(cols[ni+3])||1,amt=parseFloat(cols[ni+6])||price*qty;
+        map[currentKey].items.push({name:itemName,price:price,qty:qty,amt:amt});
+      } else if(nameIdxAll.length>1&&clientName){
+        nameIdxAll.forEach(function(ni){ var itemName=cols[ni]||''; if(!itemName) return; var price=parseFloat(cols[ni+2])||0,qty=parseFloat(cols[ni+3])||1,amt=parseFloat(cols[ni+6])||price*qty; map[currentKey].items.push({name:itemName,price:price,qty:qty,amt:amt}); });
+      }
+    });
+    var names=Object.keys(map).filter(function(k){ return map[k].items.length>0; });
+    if(!names.length){ showToast('取込できるデータがありません','error'); input.value=''; return; }
+    if(!confirm(names.length+'件の見積明細を取り込みます。\nよろしいですか？')){ input.value=''; return; }
+    var promises=names.map(function(name){
+      var items=map[name].items,csvTotal=map[name].total;
+      var itemsTotal=items.reduce(function(s,it){ return s+(it.amt||it.qty*it.price); },0);
+      var total=(csvTotal&&csvTotal>0)?csvTotal:itemsTotal;
+      var matched=data.find(function(r){ return (r.name||'')===name||(r.name||'').indexOf(name)===0||name.indexOf(r.name||'')===0; });
+      if(matched) return col.doc(matched.id).update({estimateItems:items,estimateTotal:total});
+      else return col.add({name:name,status:'制作中',estimateItems:items,estimateTotal:total,chakushu:null,chakushuDate:'',zangaku:null,zangakuDate:'',gaichuu:null,gaichuuDate:'',createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+    });
+    Promise.all(promises).then(function(){ showToast(names.length+'件を取り込みました','success'); input.value=''; showTab('invoice-check'); }).catch(function(e){ showToast('取込失敗: '+e.message,'error'); input.value=''; });
+  };
+  reader.readAsText(file,'UTF-8');
+}
+
+// ★修正：請求チェックにメモ欄追加
+var currentPayeeTab='all';
+function setPayeeTab(tab){
+  currentPayeeTab=tab;
+  ['all','kuuhaku','tripot'].forEach(function(t){
+    var btn=document.getElementById('ic-tab-'+t);
+    if(!btn) return;
+    btn.style.borderBottom=t===tab?'3px solid #185FA5':'3px solid transparent';
+    btn.style.color=t===tab?'#185FA5':'#888';
+    btn.style.fontWeight=t===tab?'700':'500';
+  });
+  renderInvoiceCheck();
+}
+function renderInvoiceCheck(){
+  var q=(document.getElementById('search-invoice-check').value||'').toLowerCase();
+  var filterStatus=document.getElementById('filter-invoice-status').value;
+  var estimates=data.filter(function(r){ return r.estimateItems&&r.estimateItems.length>0; });
+  var rows=estimates.filter(function(e){ return !q||(e.name||'').toLowerCase().indexOf(q)>=0; }).sort(function(a,b){ return (a.name||'').localeCompare(b.name||'','ja'); }).map(function(e){
+    var estName=(e.name||'');
+    var estTotal=e.estimateTotal||e.estimateItems.reduce(function(s,it){ return s+(it.amt||it.qty*it.price); },0);
+    var shots=data.filter(function(r){
+      if(!isShot(r)||isRunning(r)) return false;
+      var rName=r.name||'';
+      return rName===estName||rName.indexOf(estName)===0||estName.indexOf(rName)===0;
+    });
+    var chakushuTotal=shots.reduce(function(s,r){ return s+(r.chakushu||0); },0);
+    var zangakuTotal=shots.reduce(function(s,r){ return s+(r.zangaku||0); },0);
+    var invoicedTotal=chakushuTotal+zangakuTotal;
+    // 振込先：shotsから取得（なければ見積データから）
+    var payee=shots.length>0?(shots[0].payee||''):(e.payee||'');
+    var alerts=[];
+    if(chakushuTotal===0) alerts.push({type:'error',msg:'着手金 未請求'});
+    if(zangakuTotal===0) alerts.push({type:'warn',msg:'残金 未請求'});
+    var diff=Math.abs(invoicedTotal-estTotal);
+    if(estTotal>0&&invoicedTotal>0&&diff>1000){ alerts.push({type:'warn',msg:'金額差異 '+(invoicedTotal>estTotal?'+':'-')+jpy(diff)}); }
+    var status=alerts.length>0?'alert':'ok';
+    return {e:e,estName:estName,estTotal:estTotal,chakushuTotal:chakushuTotal,zangakuTotal:zangakuTotal,invoicedTotal:invoicedTotal,alerts:alerts,status:status,payee:payee};
+  }).filter(function(row){ return !filterStatus||row.status===filterStatus; })
+  .filter(function(row){ return currentPayeeTab==='all'||row.payee===currentPayeeTab; });
+
+  document.getElementById('invoice-check-tbody').innerHTML=rows.length?rows.map(function(row){
+    var e=row.e;
+    var np=(e.name||'').split('/');
+    var isConfirmed=!!e.invoiceChecked;
+    var alertHtml=row.alerts.map(function(a){
+      var bg=a.type==='error'?'#fee2e2':'#fde8e8',col=a.type==='error'?'#991b1b':'#c0392b';
+      return '<span style="background:'+bg+';color:'+col+';font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;white-space:nowrap">'+a.msg+'</span>';
+    }).join(' ');
+    var statusHtml=isConfirmed
+      ?'<span style="background:#f0f0f0;color:#aaa;font-size:11px;font-weight:700;padding:3px 10px;border-radius:10px">確認済み</span>'
+      :(row.status==='ok'?'<span style="background:#dcfce7;color:#166534;font-size:11px;font-weight:700;padding:3px 10px;border-radius:10px">✓ 問題なし</span>':alertHtml);
+    var confirmBtn=!isConfirmed&&row.status==='alert'
+      ?'<button class="icon-btn" onclick="setInvoiceChecked(\''+e.id+'\',true)" style="font-size:10px">確認済みにする</button>'
+      :(isConfirmed?'<button class="icon-btn" onclick="setInvoiceChecked(\''+e.id+'\',false)" style="font-size:10px;color:#aaa">戻す</button>':'');
+    var rowPayee=row.payee||e.payee||'';
+    var payeeSelectHtml='<div style="display:flex;flex-direction:column;gap:3px;">'+
+      '<select data-id="'+e.id+'" onchange="saveInvoicePayee(this.dataset.id,this.value)" style="font-size:10px;padding:2px 4px;border:1px solid #ddd;border-radius:5px;background:#fff;cursor:pointer;max-width:90px;">'+
+        '<option value=""'+(rowPayee===''?' selected':'')+'>未設定</option>'+
+        '<option value="kuuhaku"'+(rowPayee==='kuuhaku'?' selected':'')+'>クウハク</option>'+
+        '<option value="tripot"'+(rowPayee==='tripot'?' selected':'')+'>トライポット</option>'+
+      '</select>'+
+    '</div>';
+    var payeeColorHtml=rowPayee==='tripot'?'<div class="payee-tripot">トライポット株式会社</div>':rowPayee==='kuuhaku'?'<div class="payee-kuuhaku">株式会社クウハク</div>':'';
+    return '<tr style="'+(isConfirmed?'background:#f8f8f8;opacity:0.6;text-decoration:line-through;':'background:#fff;')+'" >'+
+      '<td><strong>'+esc(np[0])+'</strong>'+(np[1]?'<div style="font-size:11px;color:#aaa">'+esc(np.slice(1).join('/'))+'</div>':'')+payeeColorHtml+'</td>'+
+      '<td>'+payeeSelectHtml+'</td>'+
+      '<td class="amount" style="font-weight:600">'+jpy(row.estTotal)+'</td>'+
+      '<td style="text-align:center">'+(row.chakushuTotal>0?'<span style="color:#185FA5;font-weight:600">'+jpy(row.chakushuTotal)+'</span>':'<span style="background:#fee2e2;color:#991b1b;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">未請求</span>')+'</td>'+
+      '<td style="text-align:center">'+(row.zangakuTotal>0?'<span style="color:#0F6E56;font-weight:600">'+jpy(row.zangakuTotal)+'</span>':'<span style="background:#f3f4f6;color:#6b7280;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">未請求</span>')+'</td>'+
+      '<td style="text-align:right;font-weight:700;white-space:nowrap">'+
+        (function(){
+          var diff=row.invoicedTotal-row.estTotal;
+          if(!row.estTotal) return '<span style="color:#aaa">—</span>';
+          if(diff===0) return '<span style="color:#0F6E56">±¥0</span>';
+          var col=diff>0?'#185FA5':'#A32D2D';
+          return '<span style="color:'+col+'">'+(diff>0?'+':'')+jpy(diff)+'</span>';
+        })()+
+      '</td>'+
+      '<td><textarea class="invoice-memo-input" rows="2" placeholder="メモを入力..." onchange="saveInvoiceMemo(\''+e.id+'\',this.value)">'+esc(e.invoiceMemo||'')+'</textarea></td>'+
+      '<td>'+confirmBtn+'</td>'+
+    '</tr>';
+  }).join(''):'<tr><td colspan="7" class="empty-state">見積CSVを取り込むとここに表示されます</td></tr>';
+
+  document.getElementById('invoice-check-cards').innerHTML=rows.length?rows.map(function(row){
+    var e=row.e;
+    var np=(e.name||'').split('/');
+    var isConfirmed=!!e.invoiceChecked;
+    var alertHtml=row.alerts.map(function(a){
+      var bg=a.type==='error'?'#fee2e2':'#fde8e8',col=a.type==='error'?'#991b1b':'#c0392b';
+      return '<span style="background:'+bg+';color:'+col+';font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;display:inline-block;margin:2px">'+a.msg+'</span>';
+    }).join('');
+    var spPayee=row.payee||e.payee||'';
+    var spPayeeColor=spPayee==='tripot'?'<div class="payee-tripot">トライポット株式会社</div>':spPayee==='kuuhaku'?'<div class="payee-kuuhaku">株式会社クウハク</div>':'';
+    var spPayeeSelect='<select data-id="'+e.id+'" onchange="saveInvoicePayee(this.dataset.id,this.value)" style="font-size:11px;padding:3px 6px;border:1px solid #ddd;border-radius:6px;background:#fff;margin-top:4px;cursor:pointer;">'+
+      '<option value=""'+(spPayee===''?' selected':'')+'>振込先未設定</option>'+
+      '<option value="kuuhaku"'+(spPayee==='kuuhaku'?' selected':'')+'>株式会社クウハク</option>'+
+      '<option value="tripot"'+(spPayee==='tripot'?' selected':'')+'>トライポット株式会社</option>'+
+    '</select>';
+    return '<div class="case-card" style="'+(isConfirmed?'opacity:0.5;':'')+'">'+
+      '<div class="case-card-header"><div><div class="case-card-name">'+esc(np[0])+'</div>'+(np[1]?'<div class="case-card-vendor">'+esc(np.slice(1).join('/'))+'</div>':'')+spPayeeColor+'</div>'+
+        (function(){
+          if(isConfirmed) return '<span style="background:#f0f0f0;color:#aaa;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">確認済み</span>';
+          var diff=row.invoicedTotal-row.estTotal;
+          if(!row.estTotal) return '<span style="color:#aaa;font-size:11px">—</span>';
+          if(diff===0) return '<span style="color:#0F6E56;font-size:11px;font-weight:700">±¥0</span>';
+          var col=diff>0?'#185FA5':'#A32D2D';
+          return '<span style="color:'+col+';font-size:11px;font-weight:700">'+(diff>0?'+':'')+jpy(diff)+'</span>';
+        })()+
+      '</div>'+
+      '<div class="case-card-body">'+
+        '<div style="font-size:12px;margin-bottom:4px">見積総額 <strong>'+jpy(row.estTotal)+'</strong></div>'+
+        '<div style="display:flex;gap:10px;font-size:12px;margin-bottom:6px">'+
+          '<span>着手金 <strong style="color:#185FA5">'+(row.chakushuTotal>0?jpy(row.chakushuTotal):'未請求')+'</strong></span>'+
+          '<span>残金 <strong style="color:#0F6E56">'+(row.zangakuTotal>0?jpy(row.zangakuTotal):'未請求')+'</strong></span>'+
+        '</div>'+
+        (row.alerts.length&&!isConfirmed?'<div style="margin-bottom:6px">'+alertHtml+'</div>':'')+
+        spPayeeSelect+
+        '<textarea class="invoice-memo-input" rows="2" placeholder="メモを入力..." onchange="saveInvoiceMemo(\''+e.id+'\',this.value)" style="margin-top:6px">'+esc(e.invoiceMemo||'')+'</textarea>'+
+      '</div></div>';
+  }).join(''):'<div class="empty-state">見積CSVを取り込むとここに表示されます</div>';
+}
+
+function saveInvoicePayee(id,payee){
+  col.doc(id).update({payee:payee})
+    .then(function(){ showToast('振込先を保存しました','success'); })
+    .catch(function(e){ showToast('失敗: '+e.message,'error'); });
+}
+function setInvoiceChecked(id,checked){
+  col.doc(id).update({invoiceChecked:checked}).then(function(){ showToast(checked?'確認済みにしました':'未確認に戻しました','success'); }).catch(function(e){ showToast('失敗: '+e.message,'error'); });
+}
+function saveInvoiceMemo(id,memo){
+  col.doc(id).update({invoiceMemo:memo}).then(function(){ showToast('メモを保存しました','success'); }).catch(function(e){ showToast('失敗: '+e.message,'error'); });
+}
+
+// ---- サマリー ----
+function renderSummary(){
+  var base=new Date();
+  var months=[];
+  for(var i=-5;i<=2;i++){ var d=new Date(base.getFullYear(),base.getMonth()+i,1); months.push(d.getFullYear()+'-'+pad2(d.getMonth()+1)); }
+  var tableMonths=[];
+  for(var i=-2;i<=3;i++){ var d=new Date(base.getFullYear(),base.getMonth()+i,1); tableMonths.push(d.getFullYear()+'-'+pad2(d.getMonth()+1)); }
+  var ym1=nowYM(),ym2=nextYM();
+  function calcMonth(ym){
+    var shot=0,gaichuu=0,run=0;
+    data.forEach(function(r){
+      if(isRunning(r)){ if((r.chakushuDate||'').slice(0,7)===ym) run+=(r.chakushu||0); }
+      else{ if((r.chakushuDate||'').slice(0,7)===ym) shot+=(r.chakushu||0); if((r.zangakuDate||'').slice(0,7)===ym) shot+=(r.zangaku||0); }
+      if((r.gaichuuDate||'').slice(0,7)===ym) gaichuu+=(r.gaichuu||0);
+    });
+    return{shot:shot,gaichuu:gaichuu,run:run,profit:shot+run-gaichuu};
+  }
+  var tableRows=tableMonths.map(function(ym){
+    var c=calcMonth(ym),label=ym===ym1?'今月':ym===ym2?'来月':'';
+    var ymDisp=ymLabel(ym)+(label?'<span style="font-size:10px;color:#888;margin-left:4px">'+label+'</span>':'');
+    return '<tr style="'+(ym===ym1?'background:#f5f9ff;':'')+'">'+
+      '<td style="font-weight:'+(ym===ym1?'700':'400')+'">'+ymDisp+'</td>'+
+      '<td class="amount" style="color:#185FA5">'+jpy(c.shot)+'</td>'+
+      '<td class="amount" style="color:#A32D2D">'+jpy(c.gaichuu)+'</td>'+
+      '<td class="amount" style="color:#0F6E56">'+jpy(c.run)+'</td>'+
+      '<td class="amount"><span class="'+(c.profit>=0?'profit-p':'profit-n')+'">'+jpy(c.profit)+'</span></td></tr>';
+  }).join('');
+  var mobileCards=tableMonths.map(function(ym){
+    var c=calcMonth(ym),label=ym===ym1?'今月':ym===ym2?'来月':'',isNow=ym===ym1;
+    return '<div style="background:#fff;border-radius:12px;padding:14px 16px;margin-bottom:10px;border:'+(isNow?'2px solid #185FA5':'1px solid #eee')+';box-shadow:0 1px 3px rgba(0,0,0,0.06)">'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">'+
+        '<span style="font-size:13px;font-weight:'+(isNow?'700':'500')+'">'+ymLabel(ym)+'</span>'+
+        (label?'<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:'+(isNow?'#185FA5':'#e0e0e0')+';color:'+(isNow?'#fff':'#666')+'">'+label+'</span>':'')+
+      '</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
+        '<div style="background:#f0f6ff;border-radius:8px;padding:10px 12px"><div style="font-size:10px;color:#185FA5;font-weight:600;margin-bottom:3px">請求済入金合計</div><div style="font-size:15px;font-weight:700;color:#185FA5">'+jpy(c.shot)+'</div></div>'+
+        '<div style="background:#f0fdf4;border-radius:8px;padding:10px 12px"><div style="font-size:10px;color:#0F6E56;font-weight:600;margin-bottom:3px">ランニング</div><div style="font-size:15px;font-weight:700;color:#0F6E56">'+jpy(c.run)+'</div></div>'+
+        '<div style="background:#fff5f5;border-radius:8px;padding:10px 12px"><div style="font-size:10px;color:#A32D2D;font-weight:600;margin-bottom:3px">外注費</div><div style="font-size:15px;font-weight:700;color:#A32D2D">'+jpy(c.gaichuu)+'</div></div>'+
+        '<div style="background:'+(c.profit>=0?'#f0fdf4':'#fff5f5')+';border-radius:8px;padding:10px 12px"><div style="font-size:10px;color:'+(c.profit>=0?'#0F6E56':'#A32D2D')+';font-weight:600;margin-bottom:3px">概算利益</div><div style="font-size:15px;font-weight:700;color:'+(c.profit>=0?'#1D9E75':'#A32D2D')+'">'+jpy(c.profit)+'</div></div>'+
+      '</div></div>';
+  }).join('');
+  var chartData=months.map(function(ym){ return {ym:ym,c:calcMonth(ym)}; });
+  var allVals=[];
+  chartData.forEach(function(d){ allVals.push(d.c.shot,d.c.gaichuu,d.c.run,Math.abs(d.c.profit)); });
+  var maxVal=Math.max.apply(null,allVals)||1;
+  document.getElementById('summary-content').innerHTML=
+    '<div style="margin-bottom:20px">'+
+      '<div style="font-size:14px;font-weight:700;color:#1a1a1a;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #eee">📊 ダッシュボード（直近8ヶ月）</div>'+
+      '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px;">'+
+        '<span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:20px;height:3px;background:#185FA5;display:inline-block;border-radius:2px"></span>請求済入金合計</span>'+
+        '<span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:20px;height:3px;background:#A32D2D;display:inline-block;border-radius:2px"></span>外注費</span>'+
+        '<span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:20px;height:3px;background:#0F6E56;display:inline-block;border-radius:2px"></span>ランニング</span>'+
+        '<span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:20px;height:3px;background:#534AB7;border-top:2px dashed #534AB7;display:inline-block;border-radius:2px"></span>概算利益</span>'+
+      '</div>'+
+      '<div style="background:#fff;border:1.5px solid #eee;border-radius:12px;padding:16px;overflow-x:auto;">'+
+        '<canvas id="summary-chart" height="260" style="display:block;width:100%;min-width:500px;"></canvas>'+
+      '</div>'+
+    '</div>'+
+    '<div class="summary-table-wrap"><div class="table-wrap"><table><thead><tr><th>月</th><th style="text-align:right">請求済入金合計</th><th style="text-align:right">外注費</th><th style="text-align:right">ランニング</th><th style="text-align:right">概算利益</th></tr></thead><tbody>'+tableRows+'</tbody></table></div></div>'+
+    '<div class="summary-mobile-cards">'+mobileCards+'</div>';
+  setTimeout(function(){
+    var canvas=document.getElementById('summary-chart');
+    if(!canvas) return;
+    canvas.width=canvas.parentElement.clientWidth-32||700;
+    canvas.height=260;
+    var ctx=canvas.getContext('2d');
+    var W=canvas.width,H=260;
+    var padL=65,padR=15,padT=20,padB=45;
+    var gW=W-padL-padR,gH=H-padT-padB;
+    var n=chartData.length;
+    ctx.fillStyle='#fff'; ctx.fillRect(0,0,W,H);
+    var ySteps=4;
+    for(var i=0;i<=ySteps;i++){
+      var yp=padT+gH*(1-i/ySteps);
+      ctx.strokeStyle='#f0f0f0'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(padL,yp); ctx.lineTo(padL+gW,yp); ctx.stroke();
+      var val=Math.round(maxVal*i/ySteps);
+      ctx.fillStyle='#aaa'; ctx.font='10px sans-serif'; ctx.textAlign='right';
+      ctx.fillText(val>=10000?Math.round(val/10000)+'万':val,padL-5,yp+4);
+    }
+    chartData.forEach(function(d,i){
+      var xp=padL+(n===1?gW/2:gW*i/(n-1));
+      var isNow=d.ym===ym1;
+      if(isNow){
+        ctx.save(); ctx.strokeStyle='rgba(24,95,165,0.15)'; ctx.lineWidth=20;
+        ctx.beginPath(); ctx.moveTo(xp,padT); ctx.lineTo(xp,padT+gH); ctx.stroke(); ctx.restore();
+      }
+      ctx.fillStyle=isNow?'#185FA5':'#aaa';
+      ctx.font=(isNow?'bold ':'')+'9px sans-serif'; ctx.textAlign='center';
+      ctx.fillText(ymLabel(d.ym).replace('年',' ').replace('月','月'),xp,H-padB+14);
+    });
+    function drawLine(key,color,dash){
+      ctx.strokeStyle=color; ctx.lineWidth=2.5; ctx.lineJoin='round';
+      ctx.setLineDash(dash||[]);
+      ctx.beginPath();
+      chartData.forEach(function(d,i){
+        var xp=padL+(n===1?gW/2:gW*i/(n-1));
+        var yp=padT+gH*(1-Math.max(0,d.c[key])/maxVal);
+        i===0?ctx.moveTo(xp,yp):ctx.lineTo(xp,yp);
+      });
+      ctx.stroke(); ctx.setLineDash([]);
+      chartData.forEach(function(d,i){
+        var xp=padL+(n===1?gW/2:gW*i/(n-1));
+        var val=d.c[key];
+        var yp=padT+gH*(1-Math.max(0,val)/maxVal);
+        ctx.fillStyle=color;
+        ctx.beginPath(); ctx.arc(xp,yp,4,0,Math.PI*2); ctx.fill();
+        if(val!==0){
+          ctx.fillStyle=color; ctx.font='9px sans-serif'; ctx.textAlign='center';
+          var lbl=Math.abs(val)>=10000?Math.round(val/10000)+'万':val;
+          ctx.fillText((val<0?'-':'')+lbl,xp,yp-8);
+        }
+      });
+    }
+    drawLine('shot','#185FA5');
+    drawLine('gaichuu','#A32D2D');
+    drawLine('run','#0F6E56');
+    drawLine('profit','#534AB7',[6,3]);
+  },150);
+}
+
+// ---- モーダル ----
+function initPaymentRows(chakushu,chakushuDate,zangaku,zangakuDate){
+  var container=document.getElementById('f-payments-container');
+  container.innerHTML='';
+  if(chakushu!=null) addPaymentRow('chakushu',chakushu,chakushuDate);
+  if(zangaku!=null) addPaymentRow('zangaku',zangaku,zangakuDate);
+  if(chakushu==null&&zangaku==null) addPaymentRow('chakushu','','');
+}
+function addPaymentRow(type,amount,date){
+  var container=document.getElementById('f-payments-container');
+  var row=document.createElement('div');
+  row.className='payment-input-row';
+  row.style.cssText='display:flex;gap:6px;align-items:center;margin-bottom:6px;';
+  row.innerHTML='<select class="pay-type" style="width:90px;padding:7px 8px;border:1px solid #ccc;border-radius:8px;font-size:12px;flex-shrink:0;"><option value="chakushu"'+(type==='chakushu'?' selected':'')+'>着手金</option><option value="zangaku"'+(type==='zangaku'?' selected':'')+'>残金</option></select>'+
+    '<input type="number" class="pay-amount" placeholder="金額（円）" value="'+(amount||'')+'" style="flex:1;padding:7px 10px;border:1px solid #ccc;border-radius:8px;font-size:13px;">'+
+    '<input type="date" class="pay-date" value="'+(date||'')+'" style="flex:1;padding:7px 8px;border:1px solid #ccc;border-radius:8px;font-size:12px;">'+
+    '<button type="button" onclick="this.parentNode.remove()" style="background:none;border:none;color:#ccc;font-size:16px;cursor:pointer;padding:0 4px;">✕</button>';
+  container.appendChild(row);
+}
+function getPaymentRowData(){
+  var chakushu=null,chakushuDate='',zangaku=null,zangakuDate='';
+  document.querySelectorAll('#f-payments-container .payment-input-row').forEach(function(row){
+    var type=row.querySelector('.pay-type').value,amt=row.querySelector('.pay-amount').value,dt=row.querySelector('.pay-date').value;
+    if(type==='chakushu'&&amt!==''){chakushu=parseFloat(amt);chakushuDate=dt;}
+    if(type==='zangaku'&&amt!==''){zangaku=parseFloat(amt);zangakuDate=dt;}
+  });
+  return{chakushu:chakushu,chakushuDate:chakushuDate,zangaku:zangaku,zangakuDate:zangakuDate};
+}
+function openAddModal(type){
+  document.getElementById('modal-title').textContent='新規案件を追加';
+  document.getElementById('f-id').value='';
+  ['f-name','f-name-suffix','f-zangaku-est-month','f-gaichuu','f-gaichuu-date','f-memo','f-monthly','f-monthly-date'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('f-payee').value='';
+  document.getElementById('f-status').value=type==='running'?'ランニング':'制作中';
+  var fns=document.getElementById('f-name-select'); if(fns) fns.value='';
+  initPaymentRows(null,'',null,'');
+  toggleModalFields(type==='running');
+  document.getElementById('record-modal').classList.add('open');
+}
+function toggleModalFields(isRun){
+  document.getElementById('f-shot-fields').style.display=isRun?'none':'';
+  document.getElementById('f-running-fields').style.display=isRun?'':'none';
+}
+document.getElementById('f-status').addEventListener('change',function(){ toggleModalFields(this.value==='ランニング'); });
+function editRecord(id){
+  var r=data.find(function(d){ return d.id===id; }); if(!r) return;
+  var isRun=isRunning(r);
+  document.getElementById('modal-title').textContent='案件を編集';
+  document.getElementById('f-id').value=r.id;
+  document.getElementById('f-name').value=r.name||'';
+  var fns=document.getElementById('f-name-select'),fnsu=document.getElementById('f-name-suffix');
+  if(fns&&fnsu){
+    var matched=clientsData.find(function(c){ return (r.name||'').indexOf(c.name)===0; });
+    if(matched){fns.value=matched.name;fnsu.value=(r.name||'').slice(matched.name.length);}
+    else{fns.value='';fnsu.value=r.name||'';}
+  }
+  document.getElementById('f-status').value=(r.status==='保守管理')?'ランニング':(r.status||'制作中');
+  document.getElementById('f-payee').value=r.payee||'';
+  initPaymentRows(r.chakushu,r.chakushuDate||'',r.zangaku,r.zangakuDate||'');
+  document.getElementById('f-zangaku-est-month').value=r.zangakuEstMonth||'';
+  document.getElementById('f-gaichuu').value=r.gaichuu!=null?r.gaichuu:'';
+  document.getElementById('f-gaichuu-date').value=r.gaichuuDate||'';
+  document.getElementById('f-memo').value=r.memo||'';
+  document.getElementById('f-monthly').value=r.chakushu!=null?r.chakushu:'';
+  document.getElementById('f-monthly-date').value=r.chakushuDate||'';
+  toggleModalFields(isRun);
+  document.getElementById('record-modal').classList.add('open');
+}
+function closeModal(){ document.getElementById('record-modal').classList.remove('open'); }
+function saveRecord(){
+  var sel=document.getElementById('f-name-select'),suffix=document.getElementById('f-name-suffix');
+  if(sel&&sel.value) document.getElementById('f-name').value=sel.value+(suffix&&suffix.value?suffix.value:'');
+  var name=document.getElementById('f-name').value.trim();
+  if(!name){ showToast('案件名を入力してください','error'); return; }
+  var btn=document.getElementById('save-btn'); btn.disabled=true; btn.textContent='保存中...';
+  var id=document.getElementById('f-id').value;
+  var isRun=document.getElementById('f-status').value==='ランニング';
+  var payload;
+  if(isRun){
+    var mv=document.getElementById('f-monthly').value;
+    payload={name:name,status:'保守管理',payee:document.getElementById('f-payee').value||'',chakushu:mv!==''?parseFloat(mv):null,chakushuDate:document.getElementById('f-monthly-date').value,zangaku:null,zangakuDate:'',gaichuu:null,gaichuuDate:''};
+  } else {
+    var pdata=getPaymentRowData(),gv=document.getElementById('f-gaichuu').value;
+    payload={name:name,payee:document.getElementById('f-payee').value||'',status:document.getElementById('f-status').value,chakushu:pdata.chakushu,chakushuDate:pdata.chakushuDate,zangaku:pdata.zangaku,zangakuDate:pdata.zangakuDate,zangakuEstMonth:document.getElementById('f-zangaku-est-month').value||'',gaichuu:gv!==''?parseFloat(gv):null,gaichuuDate:document.getElementById('f-gaichuu-date').value,memo:document.getElementById('f-memo').value.trim()};
+  }
+  var p=id?col.doc(id).update(payload):(function(){ payload.createdAt=firebase.firestore.FieldValue.serverTimestamp(); return col.add(payload); })();
+  p.then(function(){ showToast(id?'更新しました':'追加しました','success'); closeModal(); }).catch(function(e){ showToast('保存失敗: '+e.message,'error'); }).finally(function(){ btn.disabled=false; btn.textContent='保存'; });
+}
+
+// ---- 一括操作 ----
+function onShotCheckChange(){
+  var checks=document.querySelectorAll('.shot-row-check'),checked=document.querySelectorAll('.shot-row-check:checked');
+  var btn=document.getElementById('shot-bulk-del-btn'),all=document.getElementById('shot-check-all');
+  if(btn) btn.style.display=checked.length>0?'':'none';
+  if(all){ all.indeterminate=checked.length>0&&checked.length<checks.length; all.checked=checks.length>0&&checked.length===checks.length; }
+}
+function toggleAllShotCheck(cb){ document.querySelectorAll('.shot-row-check').forEach(function(c){ c.checked=cb.checked; }); onShotCheckChange(); }
+function bulkDeleteShot(){
+  var checked=document.querySelectorAll('.shot-row-check:checked'); if(!checked.length) return;
+  if(!confirm(checked.length+'件を削除しますか？')) return;
+  var promises=Array.from(checked).map(function(c){ return col.doc(c.getAttribute('data-id')).delete(); });
+  Promise.all(promises).then(function(){ showToast(checked.length+'件を削除しました','success'); }).catch(function(e){ showToast('削除失敗: '+e.message,'error'); });
+}
+function onRunningCheckChange(){
+  var checks=document.querySelectorAll('.running-row-check'),checked=document.querySelectorAll('.running-row-check:checked');
+  var btn=document.getElementById('running-bulk-copy-btn'),all=document.getElementById('running-check-all');
+  if(btn) btn.style.display=checked.length>0?'':'none';
+  if(all){ all.indeterminate=checked.length>0&&checked.length<checks.length; all.checked=checks.length>0&&checked.length===checks.length; }
+}
+function toggleAllRunningCheck(cb){ document.querySelectorAll('.running-row-check').forEach(function(c){ c.checked=cb.checked; }); onRunningCheckChange(); }
+function bulkCopyNextMonth(){
+  var checked=document.querySelectorAll('.running-row-check:checked'); if(!checked.length) return;
+  var ids=Array.from(checked).map(function(c){ return c.getAttribute('data-id'); });
+  var records=ids.map(function(id){ return data.find(function(d){ return d.id===id; }); }).filter(Boolean);
+  var now=new Date(),y=now.getFullYear(),m=now.getMonth()+2;
+  if(m>12){m=1;y++;}
+  var lastDay=new Date(y,m,0).getDate();
+  var nextDate=y+'-'+pad2(m)+'-'+pad2(lastDay);
+  var nextLabel=y+'年'+m+'月';
+  if(!confirm(records.length+'件を'+nextLabel+'に複製します。\nよろしいですか？')) return;
+  var promises=records.map(function(r){
+    return col.add({name:r.name,vendor:r.vendor||'',payee:r.payee||'',status:'保守管理',chakushu:r.chakushu||null,chakushuDate:nextDate,zangaku:null,zangakuDate:'',gaichuu:null,gaichuuDate:'',createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+  });
+  Promise.all(promises).then(function(){ showToast(records.length+'件を'+nextLabel+'に複製しました','success'); document.querySelectorAll('.running-row-check').forEach(function(c){c.checked=false;}); onRunningCheckChange(); }).catch(function(e){ showToast('複製失敗: '+e.message,'error'); });
+}
+function moveToRunning(id){
+  col.doc(id).update({status:'保守管理'})
+    .then(function(){ showToast('ランニングに移動しました','success'); })
+    .catch(function(e){ showToast('失敗: '+e.message,'error'); });
+}
+
+function deleteRecord(id,name){
+  if(!confirm('「'+name+'」を削除しますか？\nこの操作は元に戻せません。')) return;
+  col.doc(id).delete().then(function(){ showToast('削除しました','success'); }).catch(function(e){ showToast('削除失敗: '+e.message,'error'); });
+}
+function deleteAllRecords(){
+  if(!confirm('全ての案件データを削除します。\nよろしいですか？')) return;
+  if(!confirm('本当に削除しますか？')) return;
+  col.get().then(function(snap){
+    if(snap.empty){ showToast('削除するデータがありません','error'); return; }
+    var docs=snap.docs,batches=[];
+    for(var i=0;i<docs.length;i+=500){
+      var batch=db.batch();
+      docs.slice(i,i+500).forEach(function(d){ batch.delete(d.ref); });
+      batches.push(batch.commit());
+    }
+    return Promise.all(batches);
+  }).then(function(){ showToast('全件削除しました','success'); }).catch(function(e){ showToast('削除失敗: '+e.message,'error'); });
+}
+
+// ---- MF CSV取込 ----
+function importMFCSV(input){
+  var file=input.files[0]; if(!file) return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var text=e.target.result;
+    if(text.charCodeAt(0)===0xFEFF) text=text.slice(1);
+    var lines=text.split('\n').filter(function(l){ return l.trim(); });
+    if(lines.length<2){ showToast('データがありません','error'); return; }
+    function parseCSVLine(line){
+      var result=[],current='',inQuote=false;
+      for(var i=0;i<line.length;i++){
+        var ch=line[i];
+        if(ch==='"'){inQuote=!inQuote;} else if(ch===','&&!inQuote){result.push(current);current='';} else{current+=ch;}
+      }
+      result.push(current); return result;
+    }
+    var headers=parseCSVLine(lines[0]);
+    var idxType=headers.indexOf('行形式'),idxClient=headers.indexOf('取引先名称'),idxTitle=headers.indexOf('件名');
+    var idxTotal=headers.indexOf('合計金額'),idxDate=headers.indexOf('お支払期限');
+    var idxPayee=headers.findIndex(function(h){ return /振込先|口座|入金先|振込口座/.test(h); });
+    var skipped=0,batch=[],merges=[];
+    lines.slice(1).forEach(function(line){
+      var cols=parseCSVLine(line);
+      if(!cols[idxType]||cols[idxType]!=='請求書') return;
+      var clientName=cols[idxClient]||'',title=cols[idxTitle]||'';
+      var total=parseFloat(cols[idxTotal])||0;
+      var date=(cols[idxDate]||'').replace(/\//g,'-');
+      var payeeRaw=idxPayee>=0?(cols[idxPayee]||''):'';
+      var payeeNorm=payeeRaw.replace(/[Ａ-Ｚａ-ｚ０-９]/g,function(c){ return String.fromCharCode(c.charCodeAt(0)-0xFEE0); }).replace(/　/g,' ');
+      var payee='';
+      if(/トライポット|tripot/i.test(payeeNorm)) payee='tripot';
+      else if(/クウハク|kuhaku/i.test(payeeNorm)||payeeRaw==='') payee='kuuhaku';
+      var name=clientName+(title?'/'+title:'');
+      // 完全重複チェック（同じ件名＋同じ日付）
+      var isDuplicate=data.some(function(r){ return (r.name===name)&&((r.chakushuDate||'')===date||(r.zangakuDate||'')===date); });
+      if(isDuplicate){skipped++;return;}
+
+      // 同じ件名の既存レコードを探してマージ対象か判定（日付が早い方=着手金、遅い方=残金）
+      var existing=data.find(function(r){ return r.name===name&&isShot(r); });
+      if(existing&&existing.chakushu!=null&&existing.zangaku==null){
+        var existingDate=existing.chakushuDate||'';
+        if(date>existingDate){
+          // 今回の日付の方が遅い→今回が残金
+          merges.push({id:existing.id,zangaku:total,zangakuDate:date});
+        } else {
+          // 今回の日付の方が早い→今回が着手金、既存を残金に変更
+          merges.push({id:existing.id,chakushu:total,chakushuDate:date,zangaku:existing.chakushu,zangakuDate:existingDate});
+        }
+        return;
+      }
+      batch.push({name:name,vendor:'',payee:payee,status:'請求済',chakushu:total,chakushuDate:date,zangaku:null,zangakuDate:'',gaichuu:null,gaichuuDate:'',createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+    });
+    if(!batch.length&&!merges.length){ showToast(skipped>0?'全件重複スキップ（'+skipped+'件）':'取込データがありません','error'); input.value=''; return; }
+    var msg='';
+    if(batch.length) msg+=batch.length+'件を新規追加';
+    if(merges.length) msg+=(msg?'、':'')+merges.length+'件を既存行にマージ（残金追加）';
+    if(skipped) msg+=(msg?' / ':'')+skipped+'件は重複スキップ';
+    if(!confirm(msg+' よろしいですか？')){ input.value=''; return; }
+    var promises=[];
+    batch.forEach(function(payload){ promises.push(col.add(payload)); });
+    merges.forEach(function(m){
+      var update={};
+      if(m.zangaku!=null){ update.zangaku=m.zangaku; update.zangakuDate=m.zangakuDate; }
+      if(m.chakushu!=null){ update.chakushu=m.chakushu; update.chakushuDate=m.chakushuDate; }
+      // 着手金・残金両方セットされる場合（日付入れ替えケース）
+      if(m.zangaku!=null&&m.chakushu!=null){ update.zangaku=m.zangaku; update.zangakuDate=m.zangakuDate; update.chakushu=m.chakushu; update.chakushuDate=m.chakushuDate; }
+      promises.push(col.doc(m.id).update(update));
+    });
+    Promise.all(promises).then(function(){ showToast(msg,'success'); input.value=''; }).catch(function(e){ showToast('取込失敗: '+e.message,'error'); input.value=''; });
+  };
+  reader.readAsText(file,'UTF-8');
+}
+
+// ---- CSV出力 ----
+function buildCSV(rows){
+  var h=['案件名','ステータス','着手金','着手金入金日','残金','残金入金予定日','外注費','外注費支払日','概算利益'];
+  var b=rows.map(function(r){
+    var income=(r.chakushu||0)+(r.zangaku||0);
+    var profit=(r.gaichuu!=null&&income>0)?income-(r.gaichuu||0):'';
+    return[r.name,r.status,r.chakushu!=null?r.chakushu:'',r.chakushuDate||'',r.zangaku!=null?r.zangaku:'',r.zangakuDate||'',r.gaichuu!=null?r.gaichuu:'',r.gaichuuDate||'',profit];
+  });
+  return[h].concat(b).map(function(row){ return row.map(function(v){ return'"'+String(v).replace(/"/g,'""')+'"'; }).join(','); }).join('\n');
+}
+function dlCSV(csv,name){ var blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'}); var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; a.click(); }
+function exportCSV(){ dlCSV(buildCSV(data),'入金管理_'+new Date().toISOString().slice(0,10)+'.csv'); showToast('CSVを出力しました','success'); }
+function exportCurrentMonth(){
+  var ym=nowYM(),label=ymLabel(ym);
+  var rows=data.filter(function(r){ return (r.chakushuDate||'').slice(0,7)===ym||(r.zangakuDate||'').slice(0,7)===ym||(r.gaichuuDate||'').slice(0,7)===ym; });
+  if(!rows.length){showToast('今月の対象案件がありません','error');return;}
+  dlCSV(buildCSV(rows),'月次レポート_'+label+'.csv');
+  showToast(label+'のレポートを出力しました（'+rows.length+'件）','success');
+}
+
+var toastTimer;
+function showToast(msg,type){ var el=document.getElementById('toast'); el.textContent=msg; el.className='toast show'+(type?' '+type:''); clearTimeout(toastTimer); toastTimer=setTimeout(function(){el.classList.remove('show');},3500); }
+document.getElementById('record-modal').addEventListener('click',function(e){ if(e.target===e.currentTarget) closeModal(); });
+</script>
+</body>
+</html>
